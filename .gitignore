@@ -1,0 +1,17 @@
+# Object files
+*.o
+
+# Disassembly files
+*.dis
+
+# Hex files
+*.hex
+
+# Map files
+*.map
+
+# ELF files
+*.elf
+
+NU32DIPbootloaded.ld
+Makefile
