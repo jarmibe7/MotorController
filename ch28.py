@@ -30,6 +30,7 @@ def main():
             '\td: Read encoder (degrees)\n'
             '\te: Reset encoder'
             '\t\tq: Quit\n'
+            '\tr: Get mode'
         )
 
         # Read the user's choice
@@ -55,6 +56,11 @@ def main():
                 print('\n***EXITING CLIENT***')
                 has_quit = True; # exit client
                 ser.close() # close the port
+            case 'r': # Get mode
+                modes = {0:'IDLE', 1:'PWM', 2:'ITEST', 3:'HOLD', 4:'TRACK'}
+                n_str = ser.read_until(b'\n'); # Read mode from PIC
+                n_int = int(n_str)
+                print(f'Mode: {modes[n_int]}\n')
             case _: # Default case, invalid selection
                 print(f'Invalid Selection {selection_endline}')
 

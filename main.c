@@ -9,6 +9,7 @@
 
 #include "nu32dip.h"
 #include "encoder.h"  
+#include "utilities.h"
 // include other header files here
 
 #define BUF_SIZE 200
@@ -20,6 +21,7 @@ int main()
     NU32DIP_YELLOW = 1;  // Turn off the LEDs
     NU32DIP_GREEN = 1;
 
+    set_mode(IDLE); // Set initial mode to IDLE
     UART2_Startup(); // Initialize UART2
 
     __builtin_disable_interrupts();
@@ -65,14 +67,18 @@ int main()
                 WriteUART2("b");
                 break;
             }
-            case 'q':
+            case 'q':                       // q: Quit
             {
-                // Handle q for quit. Later you may want to return to IDLE mode here. 
+                set_mode(IDLE);  // Set mode to IDLE before menu exit
                 break;
             }
             case 'r':                       // r: Get mode
             {
-
+                char m[50];
+                int curr_mode = (int) get_mode();
+                sprintf(m,"%d\r\n",curr_mode);
+                NU32DIP_WriteUART1(m);
+                break;
             }
             default:
             {

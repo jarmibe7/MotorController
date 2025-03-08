@@ -3,13 +3,16 @@
 
 #include "nu32dip.h"
 
-enum Mode {
+typedef enum {
     IDLE,
     PWM,
     ITEST,
     HOLD,
     TRACK
-}
+} Mode;
+
+Mode get_mode();
+void set_mode(Mode m);
 
 #define NUMSAMPS 1000       // Number of points in waveform
 // TODO: Waveform container arrays
