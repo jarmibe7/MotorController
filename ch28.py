@@ -26,13 +26,14 @@ def main():
 
         # Display the menu options; this list will grow
         print(
-            '\tc: Read encoder (counts)'
-            '\td: Read encoder (degrees)\n'
-            '\te: Reset encoder'
-            '\t\tf: Set PWM (-100 to 100)\n'
-            '\tp: Unpower the motor'
-            '\t\tq: Quit\n'
-            '\tr: Get mode'
+            '\tb: Read current sensor (mA)'
+            '\tc: Read encoder (counts)\n'
+            '\td: Read encoder (degrees)'
+            '\te: Reset encoder\n'
+            '\tf: Set PWM (-100 to 100)'
+            '\tp: Unpower the motor\n'
+            '\tq: Quit'
+            '\t\t\t\tr: Get mode\n'
         )
 
         # Read the user's choice
@@ -44,6 +45,10 @@ def main():
 
         # Take the appropriate action
         match selection:
+            case 'b': # Read current (mA)
+                a_str = ser.read_until(b'\n'); # Read current sensor
+                a_flt = float(a_str) # turn it into a float
+                print(f'Motor current (mA): {a_flt}\n') # print it to the screen
             case 'c': # Read encoder (counts)
                 n_str = ser.read_until(b'\n'); # Read encoder count from PIC
                 n_int = int(n_str) # turn it into an int
@@ -70,7 +75,7 @@ def main():
                 n_int = int(n_str)
                 print(f'Mode: {modes[n_int]}\n')
             case _: # Default case, invalid selection
-                print(f'Invalid Selection {selection_endline}')
+                print(f'Invalid Selection: {selection_endline}')
 
     return
 
