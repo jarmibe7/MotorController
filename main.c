@@ -10,9 +10,12 @@
 #include "nu32dip.h"
 #include "encoder.h"  
 #include "utilities.h"
-// include other header files here
+#include "current_control.h"
+#include "ina219.h"
 
 #define BUF_SIZE 200
+
+
 
 int main() 
 {
@@ -21,13 +24,18 @@ int main()
     NU32DIP_YELLOW = 1;  // Turn off the LEDs
     NU32DIP_GREEN = 1;
 
+    __builtin_disable_interrupts();
     set_mode(IDLE); // Set initial mode to IDLE
     UART2_Startup(); // Initialize UART2
+    Current_Control_Startup(); // Initialize current controller and PWM
+    INA219_Startup();
+    
 
-    __builtin_disable_interrupts();
-    // In future, initialize modules or peripherals here
+    // Turn on PWM
+    T2CONbits.ON = 1; // turn on Timer2 (PWM)
+    T3CONbits.ON = 1; // turn on Timer3 (Current Controller)
+    OC1CONbits.ON = 1; // turn on OC1
     __builtin_enable_interrupts();
-
     while(1)
     {
         NU32DIP_ReadUART1(buffer,BUF_SIZE); // We expect the next character to be a menu command
@@ -35,6 +43,14 @@ int main()
 
         // Check for menu command
         switch (buffer[0]) {
+            case 'b':                      // b: Read current sensor (mA)
+            {
+                float current = INA219_read_current();
+                char m[50];
+                sprintf(m,"%f\r\n",current);
+                NU32DIP_WriteUART1(m);
+                break;
+            }
             case 'c':                      // c: Read encoder value (counts)
             {
                 WriteUART2("a");
@@ -65,6 +81,25 @@ int main()
             case 'e':                      // e: Reset encoder value
             {
                 WriteUART2("b");
+                break;
+            }
+            case 'f':                      // f: Set PWM (-100 to 100)
+            {
+                char pwmBuffer[BUF_SIZE];
+                NU32DIP_ReadUART1(pwmBuffer,BUF_SIZE); // Read PWM value
+                int pwm;
+                int valid = sscanf(pwmBuffer, "%d", &pwm);
+                if (valid != 1 | pwm < -100 | pwm > 100) {
+                    NU32DIP_GREEN = 0;  // Turn on LED2 to indicate an error
+                    break;
+                }
+                set_mode(PWM);  // Set mode to PWM
+                set_pwm_dc(pwm);
+                break;
+            }
+            case 'p':                       // p: Unpower the motor
+            {
+                set_mode(IDLE);
                 break;
             }
             case 'q':                       // q: Quit

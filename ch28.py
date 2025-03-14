@@ -29,6 +29,8 @@ def main():
             '\tc: Read encoder (counts)'
             '\td: Read encoder (degrees)\n'
             '\te: Reset encoder'
+            '\t\tf: Set PWM (-100 to 100)\n'
+            '\tp: Unpower the motor'
             '\t\tq: Quit\n'
             '\tr: Get mode'
         )
@@ -51,6 +53,12 @@ def main():
                 n_int = int(n_str) # turn it into an int
                 print(f'Encoder count (degrees): {n_int}\n') # print it to the screen
             case 'e': # Reset encoder
+                pass
+            case 'f': # Set PWM (-100 to 100)
+                pwm_selection = input('ENTER PWM VALUE (-100 to 100): ')
+                pwm_selection = pwm_selection+'\n'
+                ser.write(pwm_selection.encode()); # Send command to PIC
+            case 'p':
                 pass
             case 'q': # Quit client
                 print('\n***EXITING CLIENT***')
