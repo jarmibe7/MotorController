@@ -14,7 +14,7 @@ typedef enum {
 Mode get_mode();
 void set_mode(Mode m);
 
-#define NUMSAMPS 1000       // Number of points in waveform
+#define ITEST_NUMSAMPS 100       // Number of points in ITEST reference
 // TODO: Waveform container arrays
 
 #endif // UTILITIES__H__

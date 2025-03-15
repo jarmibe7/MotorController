@@ -1,15 +1,31 @@
 #include "NU32DIP.h"
 #include "current_control.h"
+#include "ina219.h"
 #include "utilities.h"
 
-static volatile int pwm_dc = 0; // PWM duty cycle
-static volatile int pwm_direction = 0;  // PWM direction (0 for forward, 1 for reverse)
+static volatile int PwmDC = 0; // PWM duty cycle
+static volatile int PwmDirection = 0;  // PWM direction (0 for forward, 1 for reverse)
+
+static volatile float Kp = 0, Ki = 0;       // Control gains
+static volatile float Eint = 0;               // Integral of error
+
+static volatile float ITEST_Waveform[ITEST_NUMSAMPS];     // Waveform
+static volatile float CURRarray[ITEST_NUMSAMPS];      // Measured values to plot (from current sensor)
+static volatile float REFarray[ITEST_NUMSAMPS];      // Reference values to plot (ref current)
 
 void set_pwm_dc(int dc);
+void set_gains(int p, int i);
+
+// char m[50];
+// sprintf(m,"%d\r\n",OC1RS);
+// NU32DIP_WriteUART1(m);
 
 void __ISR(_TIMER_3_VECTOR, IPL6SOFT) CurrentController(void) {
     // OC1RS = 600; // Set duty cycle to 25%
     // LATBINV = 0x800;    // Toggle RB11
+    static int itest_samples = 0;
+    static float error = 0;
+    static float u = 0;           // Control signal
 
     switch (get_mode()) {
         case IDLE:
@@ -19,11 +35,44 @@ void __ISR(_TIMER_3_VECTOR, IPL6SOFT) CurrentController(void) {
         }
         case PWM:
         {
-            OC1RS = (int) (((float) pwm_dc / 100.0f) * 2400); // Set duty cycle to duty cycle
-            // char m[50];
-            // sprintf(m,"%d\r\n",OC1RS);
+            OC1RS = PwmDC; // Set duty cycle to duty cycle
+            LATBbits.LATB11 = PwmDirection; // Set motor direction
+            break;
+        }
+        case ITEST:
+        {
+            itest_samples++;
+
+            float current = INA219_read_current();  // Read current sensor
+            error = (float) ITEST_Waveform[itest_samples] - current;  // Calculate error
+            Eint += error;  // Update integral of error
+            u = Kp*error + Ki*Eint;  // Calculate control signal
+
+            if (Eint > 200.0f) {    // Limit compounded error
+                Eint = 200.0f; 
+            } else if (Eint < -200.0f) {
+                Eint = -200.0f;
+            }
+            
+            // char m[50]; // Debug output
+            // sprintf(m,"%f\r\n",ITEST_Waveform[itest_samples]);
             // NU32DIP_WriteUART1(m);
-            LATBbits.LATB11 = pwm_direction; // Set motor direction
+
+            set_pwm_dc(u);
+
+            OC1RS = PwmDC;
+            LATBbits.LATB11 = PwmDirection;
+
+            // Save points to plot later
+            CURRarray[itest_samples] = current;
+            REFarray[itest_samples] = ITEST_Waveform[itest_samples];
+
+            // If we are done testing set mode to IDLE
+            if (itest_samples >= ITEST_NUMSAMPS - 1) {
+                set_mode(IDLE);
+                itest_samples = 0;
+                Eint = 0;
+            }
             break;
         }
         default:
@@ -67,7 +116,7 @@ static void pwm_setup(void) {
     // OC1 settings
     OC1CONbits.OCM = 0b110; // PWM mode without fault pin
     OC1CONbits.OCTSEL = 0; // Use Timer2
-    OC1RS = 600; // duty cycle = OC1RS/(PR2+1) = 75%
+    OC1RS = 600; // duty cycle = OC1RS/(PR2+1) = 25%
     OC1R = 600; // initialize before turning OC1 on; afterward it is read-only
     
     return;
@@ -93,11 +142,67 @@ static void current_controller_setup(void) {
     return;
 }
 
-void set_pwm_dc(int dc) {
-    pwm_dc = abs(dc);
-    if (dc < 0) {
-        pwm_direction = 1;
-    } else {
-        pwm_direction = 0;
+//
+// Function to make reference current signal
+//
+void make_waveform() {
+    // Waveform represents the desired motor current
+    int i = 0;  // square wave center and amplitude
+    float A = 200.0f;
+    for (i = 0; i < ITEST_NUMSAMPS; ++i) {
+        if ( (i < 25) || (i >= 50 && i < 75)) {
+            ITEST_Waveform[i] = A;
+        } 
+        else {
+            ITEST_Waveform[i] = -A;
+        }
     }
 }
+
+//
+// Send plot data to Python
+//
+void send_plot_data() {
+    char message[50];
+    for (int i=0; i<ITEST_NUMSAMPS; i++) {
+        sprintf(message, "%d %f %f\r\n", ITEST_NUMSAMPS-i, CURRarray[i], REFarray[i]);
+        NU32DIP_WriteUART1(message);
+    }
+}
+
+// ---------------------------------------
+//          Setters and Getters
+// ---------------------------------------
+
+//
+// Setter for PWM duty cycle
+//
+void set_pwm_dc(int dc) {
+    if (dc > 100.0f) {      // Make sure DC is in bounds
+        dc = 100.0f;
+    }
+    else if (dc < -100.0f) {
+        dc = -100.0f;
+    }
+
+    PwmDC = abs(dc);       // Convert DC input to percentage of PR2
+    PwmDC = (int) (((float) PwmDC / 100.0f) * 2400);
+
+    if (dc < 0) {           // Get direction bit
+        PwmDirection = 1;
+    } else {
+        PwmDirection = 0;
+    }
+}
+
+//
+// Setters for current control gains
+//
+void set_curr_kp(float kp) { Kp = kp; }
+void set_curr_ki(float ki) { Ki = ki; }
+
+//
+// Getters for current control gains
+//
+float get_curr_kp() { return Kp; }
+float get_curr_ki() { return Ki; }

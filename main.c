@@ -25,6 +25,7 @@ int main()
     NU32DIP_GREEN = 1;
 
     __builtin_disable_interrupts();
+    make_waveform();
     set_mode(IDLE); // Set initial mode to IDLE
     UART2_Startup(); // Initialize UART2
     Current_Control_Startup(); // Initialize current controller and PWM
@@ -89,12 +90,45 @@ int main()
                 NU32DIP_ReadUART1(pwmBuffer,BUF_SIZE); // Read PWM value
                 int pwm;
                 int valid = sscanf(pwmBuffer, "%d", &pwm);
-                if (valid != 1 | pwm < -100 | pwm > 100) {
+                if (valid != 1 || pwm < -100 || pwm > 100) {
                     NU32DIP_GREEN = 0;  // Turn on LED2 to indicate an error
                     break;
                 }
                 set_mode(PWM);  // Set mode to PWM
                 set_pwm_dc(pwm);
+                break;
+            }
+            case 'g':                       // g: Set current gains
+            {
+                float kp_in = 0;
+                float ki_in = 0;
+                char inp[BUF_SIZE];
+                NU32DIP_ReadUART1(inp,BUF_SIZE); // Read Kp value
+                int kp_val = sscanf(inp, "%f", &kp_in);
+                NU32DIP_ReadUART1(inp,BUF_SIZE); // Read Ki value
+                int ki_val = sscanf(inp, "%f", &ki_in);
+                if(kp_val != 1 || ki_val != 1) {
+                    NU32DIP_GREEN = 0;
+                    break;
+                }   
+                set_curr_kp(kp_in);   // Call setter functions
+                set_curr_ki(ki_in);
+                break;
+
+            }
+            case 'h':                       // h: Get current gains
+            {
+                float kp = get_curr_kp(); // Call getter functions
+                float ki = get_curr_ki();
+                char m[50];
+                sprintf(m,"%f\r\n%f\r\n",kp,ki);
+                NU32DIP_WriteUART1(m);
+                break;
+            }
+            case 'k':                       // k: Test current gains
+            {
+                set_mode(ITEST);    // Test current and send plot data
+                send_plot_data();
                 break;
             }
             case 'p':                       // p: Unpower the motor
