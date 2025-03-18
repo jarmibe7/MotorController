@@ -14,7 +14,7 @@
 #include "ina219.h"
 #include "position_control.h"
 
-#define BUF_SIZE 200
+
 
 
 
@@ -152,7 +152,7 @@ int main()
             case 'k':                       // k: Test current gains
             {
                 set_mode(ITEST);    // Test current and send plot data
-                send_plot_data();
+                send_curr_data();
                 break;
             }
             case 'l':                       // l: Go to angle (deg)
@@ -167,6 +167,22 @@ int main()
                 }
                 set_mode(HOLD);  // Set mode to PWM
                 set_angle(ang);
+                break;
+            }
+            case 'm':                       // m: Load step trajectory
+            {
+                read_traj();
+                break;
+            }
+            case 'n':                       // n: Load cubic trajectory
+            {
+                read_traj();
+                break;
+            }
+            case 'o':                       // o: Exectue trajectory
+            {
+                set_mode(TRACK);
+                send_pos_data();
                 break;
             }
             case 'p':                       // p: Unpower the motor

@@ -15,6 +15,7 @@ Mode get_mode();
 void set_mode(Mode m);
 
 #define ITEST_NUMSAMPS 100       // Number of points in ITEST reference
-// TODO: Waveform container arrays
+#define TRAJ_NUMSAMPS 2000       // Max numer of samples for referenc trajectories
+#define BUF_SIZE 200             // Size for reading  inputs
 
 #endif // UTILITIES__H__

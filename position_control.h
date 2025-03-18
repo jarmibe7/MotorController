@@ -10,6 +10,7 @@ float get_pos_ki();
 float get_pos_kd();
 
 void Position_Control_Startup(void);
-
+void read_traj();
+void send_pos_data();
 
 #endif // POSITION_CONTROL__H__

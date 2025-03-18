@@ -16,12 +16,17 @@ static volatile int Angle = 0;              // Desired motor position
 static volatile float Kp=0, Ki=0, Kd=0;     // Control gains
 static volatile float Eint = 0;               // Integral of error
 
+static volatile float REFarray[TRAJ_NUMSAMPS]; // Trajectory reference
+static volatile float TRAJarray[TRAJ_NUMSAMPS]; // Actual followed trajectory
+static volatile int TrajLength = 0;             // Actual length of trajectory
+
 void __ISR(_TIMER_4_VECTOR, IPL5SOFT) PositionController(void) {
     LATBINV = 0x1000; // Debug output
     static int curr_ang = 0;
     static int error = 0;
     static float u = 0;
     static int prev_error = 0;
+    static int traj_index = 0;
 
     switch (get_mode()) {
         case HOLD:
@@ -40,6 +45,32 @@ void __ISR(_TIMER_4_VECTOR, IPL5SOFT) PositionController(void) {
             }
 
             prev_error = error;     // Update previous error for derivative term
+            break;
+        }
+        case TRACK:
+        {
+            curr_ang = read_encoder_deg();  // Read encoder
+            TRAJarray[traj_index] = (float) curr_ang;   // Store actual angle
+            set_angle((int) REFarray[traj_index]); // Set ref angle
+            error = Angle - curr_ang;   // Calculate angle error
+            Eint += error;  // Update integral error
+            u = Kp*error + Ki*Eint + Kd*(error - prev_error); // Calculate control signal
+
+            set_torque(u);
+
+            if (Eint > 100.0f) {    // Prevent integrator wind up
+                Eint = 100.0f; 
+            } else if (Eint < -100.0f) {
+                Eint = -100.0f;
+            }
+
+            prev_error = error;     // Update previous error for derivative term
+
+            traj_index++;
+            if(traj_index == TrajLength) {   // If done with trajectory, hold position
+                traj_index = 0;
+                set_mode(HOLD);
+            }
             break;
         }
     }
@@ -66,6 +97,45 @@ void Position_Control_Startup(void) {
 
     T4CONbits.ON = 1; // turn on Timer4 (Position Controller)
     return;
+}
+
+//
+// Read trajectory from client
+//
+void read_traj() {
+    char trajBuffer[BUF_SIZE];
+    NU32DIP_ReadUART1(trajBuffer,BUF_SIZE); // Trajectory length
+    int valid = sscanf(trajBuffer, "%d", &TrajLength);
+    if (valid != 1) {
+        NU32DIP_GREEN = 0;  // Error
+        return;
+    }
+
+    // Store trajectory in array
+    float sample;
+    for(int i=0; i < TrajLength; i++) {
+        NU32DIP_ReadUART1(trajBuffer,BUF_SIZE); // Read next sample point
+        valid = sscanf(trajBuffer, "%f", &sample);
+        if (valid != 1) {
+            NU32DIP_GREEN = 0;  // Error
+            return;
+        }
+        REFarray[i] = sample;
+    }
+}
+
+//
+// Send plot data to Python
+//
+void send_pos_data() {
+    char message[50];
+    sprintf(message, "%d\r\n", TrajLength); // Send data length
+    NU32DIP_WriteUART1(message);
+
+    for (int i=0; i<TrajLength; i++) {  // Send plot data
+        sprintf(message, "%d %f %f\r\n", i, TRAJarray[i], REFarray[i]);
+        NU32DIP_WriteUART1(message);
+    }
 }
 
 //

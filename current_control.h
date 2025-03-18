@@ -14,7 +14,7 @@ void Current_Control_Startup(void);
 static void pwm_setup(void);
 static void current_controller_setup(void);
 void make_waveform();
-void send_plot_data();
+void send_curr_data();
 
 
 #endif // CURRENT_CONTROL__H__

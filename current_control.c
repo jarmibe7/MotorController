@@ -105,6 +105,27 @@ void __ISR(_TIMER_3_VECTOR, IPL6SOFT) CurrentController(void) {
             OC1RS = PwmDC;
             LATBbits.LATB11 = PwmDirection;
         }
+        case TRACK:
+        {
+            current = INA219_read_current();   // Calculate necessary current for desired torque
+            error = (float) Torque - current;  // Calculate error
+            Eint += error;  // Update integral of error
+            u = Kp*error + Ki*Eint + Kd*(error - prev_error);  // Calculate control signal
+
+            // char m[50]; // Debug output
+            // sprintf(m,"%f\r\n",Torque);
+            // NU32DIP_WriteUART1(m);
+
+            if (Eint > 150.0f) {    // Prevent integrator wind up
+                Eint = 150.0f; 
+            } else if (Eint < -150.0f) {
+                Eint = -150.0f;
+            }
+
+            set_pwm_dc(u);  // Set the duty cycle and direction bit
+            OC1RS = PwmDC;
+            LATBbits.LATB11 = PwmDirection;
+        }
         default:
         {
             NU32DIP_GREEN = 0;  // Turn on green LED to indicate an error
@@ -195,9 +216,9 @@ void make_waveform() {
 //
 // Send plot data to Python
 //
-void send_plot_data() {
+void send_curr_data() {
     char message[50];
-    for (int i=0; i<ITEST_NUMSAMPS; i++) {
+    for (int i=0; i<ITEST_NUMSAMPS; i++) {  // Send plot data
         sprintf(message, "%d %f %f\r\n", ITEST_NUMSAMPS-i, CURRarray[i], REFarray[i]);
         NU32DIP_WriteUART1(message);
     }
