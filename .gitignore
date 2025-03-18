@@ -12,3 +12,5 @@
 
 # ELF files
 *.elf
+
+__pycache__
