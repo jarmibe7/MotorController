@@ -12,6 +12,3 @@
 
 # ELF files
 *.elf
-
-NU32DIPbootloaded.ld
-Makefile
