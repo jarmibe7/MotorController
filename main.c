@@ -12,6 +12,7 @@
 #include "utilities.h"
 #include "current_control.h"
 #include "ina219.h"
+#include "position_control.h"
 
 #define BUF_SIZE 200
 
@@ -25,17 +26,14 @@ int main()
     NU32DIP_GREEN = 1;
 
     __builtin_disable_interrupts();
+
     make_waveform();
     set_mode(IDLE); // Set initial mode to IDLE
     UART2_Startup(); // Initialize UART2
     Current_Control_Startup(); // Initialize current controller and PWM
+    Position_Control_Startup(); // Initialize position controller
     INA219_Startup();
-    
 
-    // Turn on PWM
-    T2CONbits.ON = 1; // turn on Timer2 (PWM)
-    T3CONbits.ON = 1; // turn on Timer3 (Current Controller)
-    OC1CONbits.ON = 1; // turn on OC1
     __builtin_enable_interrupts();
     while(1)
     {
@@ -67,14 +65,8 @@ int main()
             }
             case 'd':                      // d: Read encoder value (degrees)
             {
-                WriteUART2("a");
-                while(!get_encoder_flag()) {
-                    ;
-                }
-                set_encoder_flag(0);
+                int degrees = read_encoder_deg();
                 char m[50];
-                int p = get_encoder_count();
-                int degrees = (int) ((float) p / 3.7111);
                 sprintf(m,"%d\r\n",degrees);
                 NU32DIP_WriteUART1(m);
                 break;
@@ -91,7 +83,7 @@ int main()
                 int pwm;
                 int valid = sscanf(pwmBuffer, "%d", &pwm);
                 if (valid != 1 || pwm < -100 || pwm > 100) {
-                    NU32DIP_GREEN = 0;  // Turn on LED2 to indicate an error
+                    NU32DIP_GREEN = 0;  // Error
                     break;
                 }
                 set_mode(PWM);  // Set mode to PWM
@@ -100,19 +92,21 @@ int main()
             }
             case 'g':                       // g: Set current gains
             {
-                float kp_in = 0;
-                float ki_in = 0;
+                float kp_in=0, ki_in=0, kd_in=0;
                 char inp[BUF_SIZE];
                 NU32DIP_ReadUART1(inp,BUF_SIZE); // Read Kp value
                 int kp_val = sscanf(inp, "%f", &kp_in);
                 NU32DIP_ReadUART1(inp,BUF_SIZE); // Read Ki value
                 int ki_val = sscanf(inp, "%f", &ki_in);
-                if(kp_val != 1 || ki_val != 1) {
-                    NU32DIP_GREEN = 0;
+                NU32DIP_ReadUART1(inp,BUF_SIZE); // Read Kd value
+                int kd_val = sscanf(inp, "%f", &kd_in);
+                if(kp_val != 1 || ki_val != 1 || kd_val != 1) {
+                    NU32DIP_GREEN = 0;  // Error
                     break;
                 }   
                 set_curr_kp(kp_in);   // Call setter functions
                 set_curr_ki(ki_in);
+                set_curr_kd(kd_in);
                 break;
 
             }
@@ -120,8 +114,38 @@ int main()
             {
                 float kp = get_curr_kp(); // Call getter functions
                 float ki = get_curr_ki();
+                float kd = get_curr_kd();
                 char m[50];
-                sprintf(m,"%f\r\n%f\r\n",kp,ki);
+                sprintf(m,"%f\r\n%f\r\n%f\r\n",kp,ki,kd);
+                NU32DIP_WriteUART1(m);
+                break;
+            }
+            case 'i':                       // i: Set position gains
+            {
+                float kp_in=0, ki_in=0, kd_in=0;
+                char inp[BUF_SIZE];
+                NU32DIP_ReadUART1(inp,BUF_SIZE); // Read Kp value
+                int kp_val = sscanf(inp, "%f", &kp_in);
+                NU32DIP_ReadUART1(inp,BUF_SIZE); // Read Ki value
+                int ki_val = sscanf(inp, "%f", &ki_in);
+                NU32DIP_ReadUART1(inp,BUF_SIZE); // Read Kd value
+                int kd_val = sscanf(inp, "%f", &kd_in);
+                if(kp_val != 1 || ki_val != 1 || kd_val != 1) {
+                    NU32DIP_GREEN = 0;  // Error
+                    break;
+                }   
+                set_pos_kp(kp_in);   // Call setter functions
+                set_pos_ki(ki_in);
+                set_pos_kd(kd_in);
+                break;
+            }
+            case 'j':                       // j: Get position gains
+            {
+                float kp = get_pos_kp(); // Call getter functions
+                float ki = get_pos_ki();
+                float kd = get_pos_kd();
+                char m[50];
+                sprintf(m,"%f\r\n%f\r\n%f\r\n",kp,ki,kd);
                 NU32DIP_WriteUART1(m);
                 break;
             }
@@ -129,6 +153,20 @@ int main()
             {
                 set_mode(ITEST);    // Test current and send plot data
                 send_plot_data();
+                break;
+            }
+            case 'l':                       // l: Go to angle (deg)
+            {
+                char angBuffer[BUF_SIZE];
+                NU32DIP_ReadUART1(angBuffer,BUF_SIZE); // Read PWM value
+                int ang;
+                int valid = sscanf(angBuffer, "%d", &ang);
+                if (valid != 1) {
+                    NU32DIP_GREEN = 0;  // Error
+                    break;
+                }
+                set_mode(HOLD);  // Set mode to PWM
+                set_angle(ang);
                 break;
             }
             case 'p':                       // p: Unpower the motor

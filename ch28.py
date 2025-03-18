@@ -15,7 +15,7 @@ import serial
 import matplotlib.pyplot as plt
 ser = serial.Serial('com4',230400)
 
-# Best Current Gains: Kp=0.16, Ki=0.06
+# Best Current Gains: Kp=0.003, Ki=0.14
 
 def plot_itest():
     """
@@ -67,10 +67,13 @@ def main():
             '\tf: Set PWM (-100 to 100)'
             '\tg: Set current gains\n'
             '\th: Get current gains'
-            '\t\tk: Test current gains\n'
-            '\tp: Unpower the motor'
-            '\t\tq: Quit\n'
-            '\tr: Get mode'
+            '\t\ti: Set position gains\n'
+            '\tj: Get position gains'
+            '\t\tl: Go to angle (deg)\n'
+            '\tk: Test current gains'
+            '\t\tp: Unpower the motor\n'
+            '\tq: Quit'
+            '\t\t\t\tr: Get mode\n'
         )
 
         # Read the user's choice
@@ -95,7 +98,7 @@ def main():
                 n_int = int(n_str) # turn it into an int
                 print(f'Encoder count (degrees): {n_int}\n') # print it to the screen
             case 'e': # Reset encoder
-                pass
+                print('Reseting motor encoder...\n')
             case 'f': # Set PWM (-100 to 100)
                 pwm_selection = input('ENTER PWM VALUE (-100 to 100): ')
                 pwm_selection = pwm_selection+'\n'
@@ -103,16 +106,39 @@ def main():
             case 'g': # Set current gains
                 kp_curr = input('ENTER PROPORTIONAL GAIN: ')
                 ki_curr = input('ENTER INTEGRAL GAIN: ')
+                kd_curr = input('ENTER DERIVATIVE GAIN: ')
                 kp_curr = kp_curr + '\n'
                 ki_curr = ki_curr + '\n'
+                kd_curr = kd_curr + '\n'
                 ser.write(kp_curr.encode()); # Send gains to PIC
-                ser.write(ki_curr.encode()); # Send gains to PIC
+                ser.write(ki_curr.encode()); 
+                ser.write(kd_curr.encode()); 
             case 'h': # Get current gains
                 kp_curr_out = ser.read_until(b'\n'); 
                 ki_curr_out = ser.read_until(b'\n'); 
-                print(f'Kp={float(kp_curr_out)}, Ki={float(ki_curr_out)}\n')
+                kd_curr_out = ser.read_until(b'\n'); 
+                print(f'Kp={float(kp_curr_out)}, Ki={float(ki_curr_out)}, Kd={float(kd_curr_out)}\n')
+            case 'i': # Set position gains
+                kp_pos = input('ENTER PROPORTIONAL GAIN: ')
+                ki_pos = input('ENTER INTEGRAL GAIN: ')
+                kd_pos = input('ENTER DERIVATIVE GAIN: ')
+                kp_pos = kp_pos + '\n'
+                ki_pos = ki_pos + '\n'
+                kd_pos = kd_pos + '\n'
+                ser.write(kp_pos.encode()); # Send gains to PIC
+                ser.write(ki_pos.encode()); 
+                ser.write(kd_pos.encode()); 
+            case 'j': # Get position gains
+                kp_pos_out = ser.read_until(b'\n'); 
+                ki_pos_out = ser.read_until(b'\n'); 
+                kd_pos_out = ser.read_until(b'\n'); 
+                print(f'Kp={float(kp_pos_out)}, Ki={float(ki_pos_out)}, Kd={float(kd_pos_out)}\n')
             case 'k': # Test current gains
                 plot_itest()
+            case 'l': # Go to angle (deg)
+                ang_selection = input('ENTER DESIRED ANGLE: ')
+                ang_selection = ang_selection+'\n'
+                ser.write(ang_selection.encode()); # Send command to PIC
             case 'p': # Unpower the motor
                 print('Powering down motor...\n')
             case 'q': # Quit client

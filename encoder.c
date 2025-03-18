@@ -21,6 +21,21 @@ int get_encoder_count(){
     return pos;
 }
 
+//
+// Read motor encoder in degrees
+//
+int read_encoder_deg() {
+  WriteUART2("a");
+  while(!get_encoder_flag()) {
+      ;
+  }
+  set_encoder_flag(0);
+  int p = get_encoder_count();
+  int degrees = (int) ((float) p / 3.7111);
+
+  return degrees;
+}
+
 void __ISR(_UART_2_VECTOR, IPL7SOFT) U2ISR(void) { 
   char data = U2RXREG; // read the data
   if (data == '\n') {

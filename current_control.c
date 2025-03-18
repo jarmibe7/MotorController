@@ -1,3 +1,12 @@
+// current_control.c
+//
+// This file contains code for PI control and PWM for
+// controlling the current through the motor.
+//
+// Author: Jared Berry
+// Date: 03/08/2025
+//
+
 #include "NU32DIP.h"
 #include "current_control.h"
 #include "ina219.h"
@@ -6,15 +15,14 @@
 static volatile int PwmDC = 0; // PWM duty cycle
 static volatile int PwmDirection = 0;  // PWM direction (0 for forward, 1 for reverse)
 
-static volatile float Kp = 0, Ki = 0;       // Control gains
+static volatile float Kp=0, Ki=0, Kd=0;       // Control gains
 static volatile float Eint = 0;               // Integral of error
+
+static volatile float Torque = 0;               // Desired torque from position controller
 
 static volatile float ITEST_Waveform[ITEST_NUMSAMPS];     // Waveform
 static volatile float CURRarray[ITEST_NUMSAMPS];      // Measured values to plot (from current sensor)
-static volatile float REFarray[ITEST_NUMSAMPS];      // Reference values to plot (ref current)
-
-void set_pwm_dc(int dc);
-void set_gains(int p, int i);
+static volatile float REFarray[ITEST_NUMSAMPS];      // Reference values to plot (ref current);
 
 // char m[50];
 // sprintf(m,"%d\r\n",OC1RS);
@@ -24,7 +32,9 @@ void __ISR(_TIMER_3_VECTOR, IPL6SOFT) CurrentController(void) {
     // OC1RS = 600; // Set duty cycle to 25%
     // LATBINV = 0x800;    // Toggle RB11
     static int itest_samples = 0;
+    static float current = 0;
     static float error = 0;
+    static float prev_error = 0;
     static float u = 0;           // Control signal
 
     switch (get_mode()) {
@@ -43,23 +53,22 @@ void __ISR(_TIMER_3_VECTOR, IPL6SOFT) CurrentController(void) {
         {
             itest_samples++;
 
-            float current = INA219_read_current();  // Read current sensor
+            current = INA219_read_current();  // Read current sensor
             error = (float) ITEST_Waveform[itest_samples] - current;  // Calculate error
             Eint += error;  // Update integral of error
-            u = Kp*error + Ki*Eint;  // Calculate control signal
+            u = Kp*error + Ki*Eint + Kd*(error - prev_error);  // Calculate control signal
 
-            if (Eint > 200.0f) {    // Limit compounded error
-                Eint = 200.0f; 
-            } else if (Eint < -200.0f) {
-                Eint = -200.0f;
+            if (Eint > 150.0f) {    // Prevent integrator wind up
+                Eint = 150.0f; 
+            } else if (Eint < -150.0f) {
+                Eint = -150.0f;
             }
             
             // char m[50]; // Debug output
             // sprintf(m,"%f\r\n",ITEST_Waveform[itest_samples]);
             // NU32DIP_WriteUART1(m);
 
-            set_pwm_dc(u);
-
+            set_pwm_dc(u);  // Set the duty cycle and direction bit
             OC1RS = PwmDC;
             LATBbits.LATB11 = PwmDirection;
 
@@ -74,6 +83,27 @@ void __ISR(_TIMER_3_VECTOR, IPL6SOFT) CurrentController(void) {
                 Eint = 0;
             }
             break;
+        }
+        case HOLD:
+        {
+            current = INA219_read_current();   // Calculate necessary current for desired torque
+            error = (float) Torque - current;  // Calculate error
+            Eint += error;  // Update integral of error
+            u = Kp*error + Ki*Eint + Kd*(error - prev_error);  // Calculate control signal
+
+            // char m[50]; // Debug output
+            // sprintf(m,"%f\r\n",Torque);
+            // NU32DIP_WriteUART1(m);
+
+            if (Eint > 150.0f) {    // Prevent integrator wind up
+                Eint = 150.0f; 
+            } else if (Eint < -150.0f) {
+                Eint = -150.0f;
+            }
+
+            set_pwm_dc(u);  // Set the duty cycle and direction bit
+            OC1RS = PwmDC;
+            LATBbits.LATB11 = PwmDirection;
         }
         default:
         {
@@ -95,6 +125,9 @@ void Current_Control_Startup(void) {
     pwm_setup();
     current_controller_setup();
     TRISBbits.TRISB11 = 0; // Set RB11 as output for motor direction
+    T2CONbits.ON = 1; // turn on Timer2 (PWM)
+    OC1CONbits.ON = 1; // turn on OC1
+    T3CONbits.ON = 1; // turn on Timer3 (Current Controller)
     __builtin_enable_interrupts();
 }
 
@@ -134,7 +167,7 @@ static void current_controller_setup(void) {
     TMR3 = 0; // initialize TMR3 count
 
     // Initialize Timer3 ISR
-    IPC3bits.T3IP = 6;            // interrupt priority 5
+    IPC3bits.T3IP = 6;            // interrupt priority 6
     IPC3bits.T3IS = 0;            // subpriority 0
     IFS0bits.T3IF = 0;            // clear the int flag
     IEC0bits.T3IE = 1;            // enable Timer3
@@ -196,13 +229,21 @@ void set_pwm_dc(int dc) {
 }
 
 //
+// Setter for torque
+//
+float set_torque(float tor) { Torque = tor; }
+
+//
 // Setters for current control gains
 //
 void set_curr_kp(float kp) { Kp = kp; }
 void set_curr_ki(float ki) { Ki = ki; }
+void set_curr_kd(float kd) { Kd = kd; }
 
 //
 // Getters for current control gains
 //
 float get_curr_kp() { return Kp; }
 float get_curr_ki() { return Ki; }
+float get_curr_kd() { return Kd; }
+
