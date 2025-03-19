@@ -17,7 +17,7 @@ from traj_plot import plot_itest, gen_ref_trajectory, plot_trajectory
 ser = serial.Serial('com4',230400)
 
 # Best Current Gains: Kp=0.002, Ki=0.14, Kd=0
-# Best Position Gains: Kp=100, Ki=0, Kd=2000
+# Best Position Gains: Kp=100, Ki=0, Kd=4000
 
 def main():
     print('***ENTERING CLIENT***\n')

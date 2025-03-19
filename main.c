@@ -182,6 +182,9 @@ int main()
             case 'o':                       // o: Exectue trajectory
             {
                 set_mode(TRACK);
+                while (get_mode() == TRACK) {
+                    ;   // Wait until trajectory is done being followed
+                }
                 send_pos_data();
                 break;
             }
