@@ -1,7 +1,12 @@
-#include "NU32DIP.h"          // constants, funcs for startup and UART
-// I2C Master utilities, 400 kHz, using polling rather than interrupts
+// i2c_master_noint.c
+//
+// This file contains I2C master utilities, 400 kHz, using polling rather than interrupts.
 // The functions must be callled in the correct order as per the I2C protocol
 // Master will use I2C1 (SET PINS) SDA1 (D9) and SCL1 (D10)
+//
+// Author: Nick Marchuk, Jared Berry
+
+#include "NU32DIP.h"          
 
 void i2c_master_setup(void) {
   I2C1BRG = 53; //53 for 400kHz    // I2CBRG = [1/(2*Fsck) - PGD]*Pblck - 2 

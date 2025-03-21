@@ -1,3 +1,10 @@
+// nu32dip.c
+//
+// This file contains code for setting up the NU32d Dev Board.
+//
+// Author: Nick Marchuk
+//
+
 #include "nu32dip.h"
 
 void NU32DIP_Startup() {

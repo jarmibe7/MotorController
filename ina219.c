@@ -1,3 +1,9 @@
+// ina219.c
+//
+// This file contains code for initializing and readng the INA219 current sensor.
+//
+// Author: Nick Marchuk, Jared Berry
+
 #include "ina219.h"
 
 #define INA219_ADDR 0b1000000 // I2C address

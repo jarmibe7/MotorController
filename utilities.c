@@ -1,10 +1,10 @@
 // utilities.c
 //
-// Contain functions for controlling mode and storage
-// arrays.
+// Contain functions for controlling the mode of the motor controller.
 //
 // Author: Jared Berry
 // Date: 03/08/2025
+//
 #include "utilities.h"
 
 

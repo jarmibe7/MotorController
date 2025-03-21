@@ -1,3 +1,10 @@
+// encoder.c
+//
+// This file contains functions for reading the motor encoder.
+//
+// Author: Nick Marchuk, Jared Berry
+//
+
 #include "encoder.h"
 #include <stdio.h>
 
@@ -9,6 +16,9 @@ char rx_message[MAX_RX_MESSAGE];
 volatile int pos = 0;
 volatile int newPosFlag = 0;
 
+//
+// Getters and setters for raw encoder signal
+//
 int get_encoder_flag(){
     return newPosFlag;
 }
