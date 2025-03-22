@@ -3,7 +3,6 @@
 
 This project was associated with Northwestern University ME 333: Mechatronics (Winter 2025).
 
-## Introduction
 #### Objective
 The goal of this project was to create a motor controller in C on the PIC32MX270F256B microcontroller, with a Python client.
 
