@@ -28,7 +28,7 @@ Lastly, the Python client provides the user with a wide array of commands to acc
 The software is split up into modules, each controlling a different task, peripheral, or sensor. Each module contains a header file and a corresponding .c file.
 
 - current_control<br>
-This module contains functions for PID current control, based on user inputted gains. It also contains functions for setting up the current sensor, creating reference signals, and communicating with the client.
+This module contains functions for PID current control, based on user inputted gains. It also contains functions for setting up the current sensor, creating reference signal arrays, and communicating with the client.
 
 - encoder<br>
 This module contains functions for reading raw encoder data, converting to degrees, and setting up the UART connection to the Raspberry Pi Pico.
