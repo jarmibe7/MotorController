@@ -60,7 +60,7 @@ This file contains a function for calculating interpolated user trajectories bas
 
 #### Results
 
-Here is a video demonstration of both a step and a cubic trajectory. The motor follows each trajectory precisely, and then holds the final position until directed otherwise. Additionally, the cubic trajectory plot and corresponding current controller gain error plot are included for reference.
+Here is a video demonstration of both a step and a cubic trajectory (it may take a bit to load). The motor follows each trajectory precisely, and then holds the final position until directed otherwise. Additionally, the cubic trajectory plot and corresponding current controller gain error plot are included for reference.
 
 ![motor_demo.gif](Figures/motor_demo.gif)
 
