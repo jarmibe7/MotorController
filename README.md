@@ -14,7 +14,7 @@ The motor is controlled using a variable 20 kHz PWM signal, the duty cycle of wh
 
 ![block_diagram.png](Figures/block_diagram.png)
 
-The motor controller code runs on the PIC32 microcontroller, which controls most of the logic and runs on a 3.3V power supply. A Raspberry Pi Pico Mini is also used for reading the motor encoder data, which is then sent to the PIC32 with a UART connection. The PIC32 communicates with an INA219 current sensor using an I2C protocol for accurate motor current measurements. Lastly, a MAX9918 Bidirectional H-Bridge with an external 6V power supply is used to allow for robust control of the motor. The PIC32 microcontroller is part of a circuit named the NU32 Dev Board, which is a breadboard setup used throughout the course. The controller circuit diagram is pictured below, along with the diagram for the NU32 Dev Board.
+The motor controller code runs on the PIC32 microcontroller, which controls most of the logic and runs on a 3.3V power supply. A Raspberry Pi Pico Mini is also used for reading the motor encoder data, which is then sent to the PIC32 with a UART connection. The PIC32 communicates with an INA219 current sensor using an I2C protocol for accurate motor current measurements. Lastly, a bidirectional H-Bridge with an external 6V power supply is used to allow for robust control of the motor. The PIC32 microcontroller is part of a circuit named the NU32 Dev Board, which is a breadboard setup used throughout the course. The controller circuit diagram is pictured below, along with the diagram for the NU32 Dev Board.
 
 ![controller_circuit.png](Figures/controller_circuit.png)
 
