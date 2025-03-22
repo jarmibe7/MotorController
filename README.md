@@ -33,27 +33,27 @@ This module contains functions for PID current control, based on user inputted g
 - encoder<br>
 This module contains functions for reading raw encoder data, converting to degrees, and setting up the UART connection to the Raspberry Pi Pico.
 
--i2c_master_noint<br>
+- i2c_master_noint<br>
 This file contains I2C master utilities, 400 kHz, using polling rather than interrupts. The functions must be callled in the correct order as per the I2C protocol
 
--ina219<br>
+- ina219<br>
 This file contains code for initializing and readng the INA219 current sensor.
 
 - main<br>
 This module interfaces with the Python terminal to allow user input. It contains the command directory, and also
 initializes all sensors and peripherals. 
 
-nu32dip<br>
+- nu32dip<br>
 This module provides the setup code written by Nick Marchuk for the NU32 Dev Board.
 
-position_control<br>
+- position_control<br>
 This module contains functions for PID position control, based on user inputted gains. It also contains functions for sending and receiving calculated trajectories between the client.
 
-utilities<br>
+- utilities<br>
 This module contains constants and functions used to control the current state of the motor controller.
 
-client.py<br>
+- client.py<br>
 This file contains the UI code for the client. This entails sending data to the PIC32 microcontroller with a serial port connection, and receiving information back.
 
-traj_plot.py<br>
+- traj_plot.py<br>
 This file contains a function for calculating interpolated user trajectories based on via point inputs. It also contains functions for plotting position and current gain performance.
