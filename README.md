@@ -57,3 +57,13 @@ This file contains the UI code for the client. This entails reading user input, 
 
 - traj_plot.py<br>
 This file contains a function for calculating interpolated user trajectories based on via point inputs. It also contains functions for plotting position and current gain performance.
+
+#### Results
+
+Here is a video demonstration of both a step and a cubic trajectory. The motor follows each trajectory precisely, and then holds the final position until directed otherwise. Additionally, the cubic trajectory plot and corresponding current controller gain error plot are included for reference.
+
+![motor_demo.mp4](Figures/motor_demo.mp4)
+
+![cubic_plot.png](Figures/cubic_plot.png)
+
+![current_plot.png](Figures/current_plot.png)
